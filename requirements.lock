@@ -1,0 +1,8 @@
+Flask
+Flask-Sqlalchemy
+Flask-Script
+Flask-Testing
+MySQL-python
+Werkzeug
+alembic
+pep8
