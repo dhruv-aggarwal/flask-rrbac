@@ -23,9 +23,9 @@ class ACLRouteMixin(object):
     @property
     def is_deleted(self):
         try:
-            return self.deleted
+            return self.deleted_at is not None
         except AttributeError:
-            raise NotImplementedError('No `deleted` attribute is present')
+            raise NotImplementedError('No `deleted_at` attribute is present')
 
 
 class ACLRoleMixin(object):
@@ -54,9 +54,9 @@ class ACLRoleMixin(object):
     @property
     def is_deleted(self):
         try:
-            return self.deleted
+            return self.deleted_at is not None
         except AttributeError:
-            raise NotImplementedError('No `deleted` attribute is present')
+            raise NotImplementedError('No `deleted_at` attribute is present')
 
     @property
     def get_parents(self):
@@ -156,6 +156,6 @@ class ACLRoleRouteMapMixin(object):
     @property
     def is_deleted(self):
         try:
-            return self.deleted
+            return self.deleted_at is not None
         except AttributeError:
-            raise NotImplementedError('No `deleted` attribute is present')
+            raise NotImplementedError('No `deleted_at` attribute is present')
