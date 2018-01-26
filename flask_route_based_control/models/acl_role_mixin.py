@@ -68,3 +68,6 @@ class ACLRoleMixin(object):
         for child in children:
             for route in child.routes:
                 yield route
+
+
+anonymous = ACLRoleMixin('anonymous')
