@@ -1,8 +1,8 @@
 # -*-coding: utf-8
 """
-    flaskext.rbac
+    flaskext.rrbac
     ~~~~~~~~~~~~~
-    Adds Role-based Access Control modules to application
+    Adds Role-Route-based Access Control modules to application
 """
 
 from functools import wraps
@@ -28,7 +28,7 @@ from .models import (
 from .messages import INIIALIZATION_ERRORS
 
 __all__ = [
-    'RouteBasedACL',
+    'RoleRouteBasedACL',
     'ACLRoleMixin',
     'ACLRoleRouteMapMixin',
     'ACLRouteMixin',
@@ -39,41 +39,47 @@ __all__ = [
 connection_stack = _app_ctx_stack or _request_ctx_stack
 
 
-class _RouteBasedACLState(object):
-    '''Records configuration for Flask-RouteBasedACL'''
+class _RoleRouteBasedACLState(object):
+    '''Records configuration for Flask-RoleRouteBasedACL'''
     def __init__(self, acl, app):
         self.acl = acl
         self.app = app
 
 
-class RouteBasedACL(object):
-    """This class implements role-based access control module in Flask.
-    There are two way to initialize Flask-RBAC::
+class RoleRouteBasedACL(object):
+    """This class implements role-route-based access control module in Flask.
+    There are two way to initialize Flask-RRBAC::
         app = Flask(__name__)
-        rbac = RBAC(app)
+        rbac = RRBAC(app)
     or::
-        rbac = RBAC
+        rrbac = RRBAC
         def create_app():
             app = Flask(__name__)
-            rbac.init_app(app)
+            rrbac.init_app(app)
             return app
     :param app: the Flask object
     :param role_model: custom role model
     :param user_model: custom user model
+    :param route_model: custom route model
+    :param role_route_map_model: custom role route map model
+    :param user_role_map_model: custom user role map model
     :param user_loader: custom user loader, used to load current user
     :param auth_failed_hook: called when authorization fails.
     """
 
     def __init__(self, app=None, **kwargs):
         """Initialize with app."""
-        self._role_model = kwargs.get('role_model', ACLRoleMixin)
-        self._user_model = kwargs.get('user_model', ACLUserMixin)
-        self._route_model = kwargs.get('route_model', ACLRouteMixin)
-        self._role_route_map_model = kwargs.get(
-            'role_route_map_model', ACLRoleRouteMapMixin
+        self.set_role_model(kwargs.get('role_model', ACLRoleMixin))
+        self.set_user_model(kwargs.get('user_model', ACLUserMixin))
+        self.set_route_model(kwargs.get('route_model', ACLRouteMixin))
+        self.set_role_route_map_model(
+            kwargs.get('role_route_map_model', ACLRoleRouteMapMixin)
         )
-        self._user_role_map_model = kwargs.get(
-            'user_role_map_model', ACLUserRoleMapMixin
+        self.set_user_role_map_model(
+            kwargs.get('user_role_map_model', ACLUserRoleMapMixin)
+        )
+        self.set_user_loader(
+            kwargs.get('user_loader', lambda: current_user)
         )
         self._auth_fail_hook = kwargs.get('auth_failed_hook')
 
@@ -92,12 +98,7 @@ class RouteBasedACL(object):
 
         if not hasattr(app, 'extensions'):
             app.extensions = {}
-        app.extensions['acl'] = _RouteBasedACLState(self, app)
-
-        # self.acl.allow(anonymous, 'GET', app.view_functions['static'])
-        # app.before_first_request(self._setup_acl)
-
-        # app.before_request(self._authenticate)
+        app.extensions['rracl'] = _RoleRouteBasedACLState(self, app)
 
     def set_role_model(self, model_class):
         """Decorator to set a custom model for roles.
@@ -188,12 +189,14 @@ class RouteBasedACL(object):
                     current_user, self._user_model.__class__
                 ))
 
-            endpoint = request.url_rule.endpoint
-            method = request.method
             if current_user.is_authenticated:
-                result = self._check_permission(method, endpoint, current_user)
+                result = self._check_permission(
+                    request.method,
+                    request.url_rule.endpoint,
+                    current_user
+                )
                 if not result:
-                    return self._deny_hook()
+                    return self._auth_fail_hook_caller()
             return f(*args, **kwargs)
         return decorated_function
 
@@ -231,8 +234,10 @@ class RouteBasedACL(object):
             self._route_model.method == request.method
         ).count() > 0
 
-    def _deny_hook(self):
-        if self.permission_failed_hook:
-            return self.permission_failed_hook()
+    def _auth_fail_hook_caller(self):
+        """Call the _auth_fail_hook method of the class.
+        """
+        if self._auth_fail_hook:
+            return self._auth_fail_hook()
         else:
             abort(403)
