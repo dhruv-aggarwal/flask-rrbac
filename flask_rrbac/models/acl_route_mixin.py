@@ -25,4 +25,4 @@ class ACLRouteMixin(object):
         try:
             return self.deleted_at is not None
         except AttributeError:
-            raise NotImplementedError('No `deleted_at` attribute is present')
+            return False

@@ -1,4 +1,10 @@
 class ACLUserRoleMapMixin(object):
+    def __init__(self):
+        if not hasattr(self.__class__, 'role'):
+            self.role = None
+        if not hasattr(self.__class__, 'user'):
+            self.user = None
+
     @property
     def get_user(self):
         try:
@@ -23,6 +29,6 @@ class ACLUserRoleMapMixin(object):
     @property
     def is_deleted(self):
         try:
-            return self.deleted
+            return self.deleted_at is not None
         except AttributeError:
-            raise NotImplementedError('No `deleted` attribute is present')
+            return False

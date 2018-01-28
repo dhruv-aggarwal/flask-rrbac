@@ -1,4 +1,10 @@
 class ACLRoleRouteMapMixin(object):
+    def __init__(self):
+        if not hasattr(self.__class__, 'role'):
+            self.role = None
+        if not hasattr(self.__class__, 'route'):
+            self.route = None
+
     @property
     def get_role(self):
         try:
@@ -25,4 +31,4 @@ class ACLRoleRouteMapMixin(object):
         try:
             return self.deleted_at is not None
         except AttributeError:
-            raise NotImplementedError('No `deleted_at` attribute is present')
+            return False

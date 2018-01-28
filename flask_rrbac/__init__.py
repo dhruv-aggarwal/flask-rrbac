@@ -50,7 +50,7 @@ class RoleRouteBasedACL(object):
     """This class implements role-route-based access control module in Flask.
     There are two way to initialize Flask-RRBAC::
         app = Flask(__name__)
-        rbac = RRBAC(app)
+        rrbac = RRBAC(app)
     or::
         rrbac = RRBAC
         def create_app():
@@ -90,8 +90,8 @@ class RoleRouteBasedACL(object):
             self.app = None
 
     def init_app(self, app):
-        """Initialize application in Flask-RBAC.
-        Adds (RBAC, app) to flask extensions.
+        """Initialize application in Flask-RRBAC.
+        Adds (RRBAC, app) to flask extensions.
         Adds hook to authenticate permission before request.
         :param app: Flask object
         """
@@ -135,7 +135,7 @@ class RoleRouteBasedACL(object):
         Set the function used to load the user in context.
         E.g.
             from flask_login import current_user
-            rbacl.set_user_loader(lambda: current_user)
+            rrbac.set_user_loader(lambda: current_user)
         :param loader: Current user function.
         """
         self._user_loader = loader
