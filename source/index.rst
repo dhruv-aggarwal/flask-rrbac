@@ -1,7 +1,3 @@
-==========
-Flask-RRBAC
-==========
-
 Welcome to Flask-RRBAC's documentation!
 =======================================
 
@@ -35,11 +31,11 @@ API Reference
 Release Changes
 ===============
 
-.. include:: ../CHANGES
+.. include:: ../CHANGES.txt
 
 
 Author & Contributor
 ====================
 
-.. include:: ../AUTHORS
+.. include:: ../AUTHORS.txt
    :start-line: 2
