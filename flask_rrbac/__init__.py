@@ -1,6 +1,6 @@
 # -*-coding: utf-8
 """
-    flaskext.rrbac
+    flaskext.roleroutebasedacl
     ~~~~~~~~~~~~~
     Adds Role-Route-based Access Control modules to application
 """
@@ -48,11 +48,11 @@ class _RoleRouteBasedACLState(object):
 
 class RoleRouteBasedACL(object):
     """This class implements role-route-based access control module in Flask.
-    There are two way to initialize Flask-RRBAC::
+    There are two way to initialize Flask-RoleRouteBasedACL::
         app = Flask(__name__)
-        rrbac = RRBAC(app)
+        rrbac = RoleRouteBasedACL(app)
     or::
-        rrbac = RRBAC
+        rrbac = RoleRouteBasedACL
         def create_app():
             app = Flask(__name__)
             rrbac.init_app(app)
@@ -98,7 +98,9 @@ class RoleRouteBasedACL(object):
 
         if not hasattr(app, 'extensions'):
             app.extensions = {}
-        app.extensions['rracl'] = _RoleRouteBasedACLState(self, app)
+        app.extensions['roleroutebasedacl'] = _RoleRouteBasedACLState(
+            self, app
+        )
 
     def set_role_model(self, model_class):
         """Decorator to set a custom model for roles.
@@ -158,7 +160,7 @@ class RoleRouteBasedACL(object):
         ctx = connection_stack.top
         if ctx is not None:
             return ctx.app
-        raise RuntimeError('application not registered on rbac '
+        raise RuntimeError('application not registered on rrbac '
                            'instance and no application bound '
                            'to current context')
 
@@ -204,7 +206,7 @@ class RoleRouteBasedACL(object):
         """Return does the current user can access the resource.
         Example::
             @app.route('/some_url', methods=['GET', 'POST'])
-            @rbac._authenticate
+            @rrbac._authenticate
             def a_view_func():
                 return Response('Blah Blah...')
 
