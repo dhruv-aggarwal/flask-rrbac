@@ -16,3 +16,10 @@ class ACLUserMixin(object):
     def get_roles(self):
         for role in self.roles:
             yield role
+
+    @property
+    def get_id(self):
+        try:
+            return self.id
+        except AttributeError:
+            raise NotImplementedError('No `id` attribute is present')

@@ -1,10 +1,13 @@
+from datetime import datetime
+
+
 class ACLRouteMixin(object):
     @property
-    def get_name(self):
+    def get_rule(self):
         try:
-            return self.name
+            return self.rule
         except AttributeError:
-            raise NotImplementedError('No `name` attribute is present')
+            raise NotImplementedError('No `route` attribute is present')
 
     @property
     def get_id(self):
@@ -23,6 +26,7 @@ class ACLRouteMixin(object):
     @property
     def is_deleted(self):
         try:
-            return self.deleted_at is not None
+            return self.deleted_at is not None and \
+                self.deleted_at <= datetime.utcnow()
         except AttributeError:
             return False

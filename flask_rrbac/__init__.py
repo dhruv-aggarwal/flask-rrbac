@@ -192,7 +192,7 @@ class RoleRouteBasedACL(object):
             if current_user.is_authenticated:
                 result = self._check_permission(
                     request.method,
-                    request.url_rule.endpoint,
+                    request.url_rule.rule,
                     current_user
                 )
                 if not result:
@@ -200,7 +200,7 @@ class RoleRouteBasedACL(object):
             return f(*args, **kwargs)
         return decorated_function
 
-    def _check_permission(self, method, endpoint, user):
+    def _check_permission(self, method, rule, user):
         """Return does the current user can access the resource.
         Example::
             @app.route('/some_url', methods=['GET', 'POST'])
@@ -209,30 +209,40 @@ class RoleRouteBasedACL(object):
                 return Response('Blah Blah...')
 
         :param method: The method wait to check.
-        :param endpoint: The application endpoint.
+        :param rule: The application rule.
         :param user: user who you need to check. Current user by default.
         """
-        return self._route_model.query.join(
+        user_routes = self._route_model.query.join(
             self._role_route_map_model
         ).filter(
-            self._role_route_map_model.is_deleted.is_(None)
+            self._role_route_map_model.is_deleted == (False)
         ).join(
             self._role_model
         ).filter(
-            self._role_model.is_deleted.is_(None)
+            self._role_model.is_deleted == (False)
         ).join(
             self._user_role_map_model
         ).filter(
-            self._user_role_map_model.is_deleted.is_(None)
+            self._user_role_map_model.is_deleted == (False)
         ).join(
             self._user_model
         ).filter(
-            self._user_model.id == current_user.id
+            self._user_model.get_id == current_user.id
         ).filter(
-            self._route_model.name == request.url_rule.endpoint
-        ).filter(
-            self._route_model.method == request.method
-        ).count() > 0
+            self._route_model.get_method == request.method
+        )
+        for route in user_routes:
+            if route.get_rule == rule:
+                return True
+        return False
+
+    def get_app_routes(self):
+        rule_dict = {}
+        for rule in self.app.url_map.iter_rules():
+            rule_dict[rule.rule] = rule.methods - self.app.config.get(
+                'RRACL_IGNORED_METHODS', {'HEAD', 'OPTIONS', }
+            )
+        return rule_dict
 
     def _auth_fail_hook_caller(self):
         """Call the _auth_fail_hook method of the class.

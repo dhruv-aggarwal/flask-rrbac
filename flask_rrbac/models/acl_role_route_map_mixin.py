@@ -1,3 +1,6 @@
+from datetime import datetime
+
+
 class ACLRoleRouteMapMixin(object):
     def __init__(self):
         if not hasattr(self.__class__, 'role'):
@@ -29,6 +32,7 @@ class ACLRoleRouteMapMixin(object):
     @property
     def is_deleted(self):
         try:
-            return self.deleted_at is not None
+            return self.deleted_at is not None and \
+                self.deleted_at <= datetime.utcnow()
         except AttributeError:
             return False
