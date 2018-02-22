@@ -226,11 +226,13 @@ class RoleRouteBasedACL(object):
                     current_user, self._user_model.__class__
                 ))
             result = None
+            route_role_config = app.config.get('RRBAC_ROUTE_ROLE_MAP', {})
             if current_user.is_authenticated():
                 result = self._check_permission(
                     request.method,
                     request.url_rule.rule,
-                    current_user
+                    current_user,
+                    route_role_config
                 )
             if not result:
                 return self._auth_fail_hook_caller()
@@ -238,7 +240,11 @@ class RoleRouteBasedACL(object):
                 return f(*args, **kwargs)
         return decorated_function
 
-    def _check_permission(self, method, rule, user):
+    def is_rule_matched(self, requested_rule, rule_to_match):
+        # TODO: Add flask like route matching logic for giving access
+        return requested_rule == rule_to_match
+
+    def _check_permission(self, method, rule, user, route_role_config={}):
         """Return does the current user can access the resource.
         Example::
             @app.route('/some_url', methods=['GET', 'POST'])
@@ -249,30 +255,49 @@ class RoleRouteBasedACL(object):
         :param method: The method wait to check.
         :param rule: The application rule.
         :param user: user who you need to check. Current user by default.
+        :param route_role_config: User provided config for route role mapping.
         """
-        user_routes = self._route_model.query.join(
-            self._role_route_map_model
-        ).filter(
-            self._role_route_map_model.is_deleted == (False)
-        ).join(
-            self._role_model
-        ).filter(
-            self._role_model.is_deleted == (False)
-        ).join(
-            self._user_role_map_model
-        ).filter(
-            self._user_role_map_model.is_deleted == (False)
-        ).join(
-            self._user_model
-        ).filter(
-            self._user_model.get_id == user.id
-        ).filter(
-            self._route_model.get_method == request.method
-        )
-        # TODO: Add flask like route matching logic for giving access
-        for route in user_routes:
-            if route.get_rule == rule:
-                return True
+        if route_role_config:
+            user_roles = self._role_model.query.filter(
+                self._role_model.is_deleted == (False)
+            ).join(
+                self._user_role_map_model
+            ).filter(
+                self._user_role_map_model.is_deleted == (False)
+            ).join(
+                self._user_model
+            ).filter(
+                self._user_model.get_id == user.id
+            ).with_entities(self._role_model.name)
+            roles = set([r[0] for r in user_roles])
+            for key in route_role_config:
+                if self.is_rule_matched(rule, key):
+                    return len(roles.intersection(
+                        route_role_config[key].get(request.method, set())
+                    )) > 0
+        else:
+            user_rules = self._route_model.query.join(
+                self._role_route_map_model
+            ).filter(
+                self._role_route_map_model.is_deleted == (False)
+            ).join(
+                self._role_model
+            ).filter(
+                self._role_model.is_deleted == (False)
+            ).join(
+                self._user_role_map_model
+            ).filter(
+                self._user_role_map_model.is_deleted == (False)
+            ).join(
+                self._user_model
+            ).filter(
+                self._user_model.get_id == user.id
+            ).filter(
+                self._route_model.get_method == request.method
+            ).with_entities(self._route_model.get_rule)
+            for user_rule in user_rules:
+                if self.is_rule_matched(rule, user_rule[0]):
+                    return True
         return False
 
     def get_app_routes(self):
