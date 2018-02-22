@@ -1,3 +1,6 @@
+from sqlalchemy.ext.hybrid import hybrid_property
+
+
 class ACLUserMixin(object):
     def __init__(self):
         if not hasattr(self.__class__, 'roles'):
@@ -17,7 +20,7 @@ class ACLUserMixin(object):
         for role in self.roles:
             yield role
 
-    @property
+    @hybrid_property
     def get_id(self):
         try:
             return self.id
