@@ -102,6 +102,41 @@ class RoleRouteBasedACL(object):
             self, app
         )
 
+    def as_role_model(self, model_cls):
+        """A decorator to set custom model or role.
+        :param model_cls: Model of role.
+        """
+        self._role_model = model_cls
+        return model_cls
+
+    def as_route_model(self, model_cls):
+        """A decorator to set custom model or route.
+        :param model_cls: Model of route.
+        """
+        self._route_model = model_cls
+        return model_cls
+
+    def as_user_model(self, model_cls):
+        """A decorator to set custom model or user.
+        :param model_cls: Model of user.
+        """
+        self._user_model = model_cls
+        return model_cls
+
+    def as_user_role_map_model(self, model_cls):
+        """A decorator to set custom model or user_role_map.
+        :param model_cls: Model of user_role_map.
+        """
+        self._user_role_map_model = model_cls
+        return model_cls
+
+    def as_role_route_map_model(self, model_cls):
+        """A decorator to set custom model or role_route_map.
+        :param model_cls: Model of role_route_map.
+        """
+        self._role_route_map_model = model_cls
+        return model_cls
+
     def set_role_model(self, model_class):
         """Decorator to set a custom model for roles.
         :param model_class: Model of role.
@@ -190,16 +225,17 @@ class RoleRouteBasedACL(object):
                 raise TypeError("{user} is not an instance of {model}".format(
                     current_user, self._user_model.__class__
                 ))
-
-            if current_user.is_authenticated:
+            result = None
+            if current_user.is_authenticated():
                 result = self._check_permission(
                     request.method,
                     request.url_rule.rule,
                     current_user
                 )
-                if not result:
-                    return self._auth_fail_hook_caller()
-            return f(*args, **kwargs)
+            if not result:
+                return self._auth_fail_hook_caller()
+            else:
+                return f(*args, **kwargs)
         return decorated_function
 
     def _check_permission(self, method, rule, user):
@@ -229,7 +265,7 @@ class RoleRouteBasedACL(object):
         ).join(
             self._user_model
         ).filter(
-            self._user_model.get_id == current_user.id
+            self._user_model.get_id == user.id
         ).filter(
             self._route_model.get_method == request.method
         )
