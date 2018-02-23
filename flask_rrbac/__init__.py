@@ -103,6 +103,15 @@ class RoleRouteBasedACL(object):
             self, app
         )
 
+        self.route_role_config = app.config.get('RRBAC_ROUTE_ROLE_MAP', {})
+        self.allow_static = app.config.get('RRBAC_ALLOW_STATIC', True)
+        self.anonymous_role_name = app.config.get(
+            'RRBAC_ANONYMOUS_ROLE', 'Anonymous'
+        )
+        self.ignored_methods = self.app.config.get(
+            'RRACL_IGNORED_METHODS', {'HEAD', 'OPTIONS', }
+        )
+
     def as_role_model(self, model_cls):
         """A decorator to set custom model or role.
         :param model_cls: Model of role.
@@ -226,31 +235,27 @@ class RoleRouteBasedACL(object):
                 raise TypeError("{user} is not an instance of {model}".format(
                     current_user, self._user_model.__class__
                 ))
-            route_role_config = app.config.get('RRBAC_ROUTE_ROLE_MAP', {})
-            allow_static = app.config.get('RRBAC_ALLOW_STATIC', True)
-            if allow_static:
-                if self.is_static_fetch_endpoint(
-                    request.method,
-                    request.url_rule.rule,
-                    self.get_static_rules(app.url_map.iter_rules()),
-                ):
-                    result = True
+            if self.allow_static and self.is_static_fetch_endpoint(
+                request.method,
+                request.url_rule.rule,
+                self.get_static_rules(app.url_map.iter_rules()),
+            ):
+                result = True
             elif current_user.is_authenticated():
                 result = self._check_permission(
                     request.method,
                     request.url_rule.rule,
                     current_user,
-                    route_role_config
+                    self.route_role_config,
+                    anonymous_role_name=self.anonymous_role_name
                 )
             else:
                 result = self._check_permission(
                     request.method,
                     request.url_rule.rule,
                     None,
-                    route_role_config,
-                    anonymous_role_name=app.config.get(
-                        'RRBAC_ANONYMOUS_ROLE', 'Anonymous'
-                    )
+                    self.route_role_config,
+                    anonymous_role_name=self.anonymous_role_name
                 )
             if not result:
                 return self._auth_fail_hook_caller()
@@ -280,6 +285,7 @@ class RoleRouteBasedACL(object):
     def _check_permission_against_config(
         self, method, rule, user, route_role_config, anonymous_role_name
     ):
+        user_roles = []
         if user:
             user_roles = self._role_model.query.filter(
                 self._role_model.is_deleted == (False)
@@ -291,9 +297,8 @@ class RoleRouteBasedACL(object):
                 self._user_model
             ).filter(
                 self._user_model.get_id == user.id
-            ).with_entities(self._role_model.name)
-        else:
-            user_roles = [(anonymous_role_name)]
+            ).with_entities(self._role_model.name).distinct().all()
+        user_roles += [(anonymous_role_name,)]
         roles = set([r[0] for r in user_roles])
         for key in route_role_config:
             if self.is_rule_matched(rule, key):
@@ -305,7 +310,9 @@ class RoleRouteBasedACL(object):
     def _check_permission_against_db(
         self, method, rule, user, anonymous_role_name
     ):
-        user_rules = self._route_model.query.join(
+        all_rules = self._route_model.query.filter(
+            self._route_model.get_method == method
+        ).join(
             self._role_route_map_model
         ).filter(
             self._role_route_map_model.is_deleted == (False)
@@ -314,8 +321,11 @@ class RoleRouteBasedACL(object):
         ).filter(
             self._role_model.is_deleted == (False)
         )
+        user_rules = all_rules.filter(
+            self._role_model.name == anonymous_role_name
+        )
         if user:
-            user_rules = user_rules.join(
+            user_rules = all_rules.join(
                 self._user_role_map_model
             ).filter(
                 self._user_role_map_model.is_deleted == (False)
@@ -323,12 +333,9 @@ class RoleRouteBasedACL(object):
                 self._user_model
             ).filter(
                 self._user_model.get_id == user.id
-            )
-        else:
-            user_rules = user_rules.filter(
-                self._role_model.name == anonymous_role_name
-            )
-        user_rules = user_rules.with_entities(self._route_model.get_rule)
+            ).union(user_rules)
+        user_rules = \
+            user_rules.with_entities(self._route_model.get_rule).distinct()
         for user_rule in user_rules:
             if self.is_rule_matched(rule, user_rule[0]):
                 return True
@@ -362,9 +369,7 @@ class RoleRouteBasedACL(object):
     def get_app_routes(self, app):
         rule_dict = {}
         for rule in app.url_map.iter_rules():
-            rule_dict[rule.rule] = rule.methods - self.app.config.get(
-                'RRACL_IGNORED_METHODS', {'HEAD', 'OPTIONS', }
-            )
+            rule_dict[rule.rule] = rule.methods - self.ignored_methods
         return rule_dict
 
     def _auth_fail_hook_caller(self):

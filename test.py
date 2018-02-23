@@ -13,6 +13,7 @@ import pytest
 from flask.ext.login import LoginManager, UserMixin
 from werkzeug.exceptions import Forbidden
 
+
 app = Flask(__name__)
 app.debug = True
 
@@ -22,6 +23,7 @@ rrbac = RoleRouteBasedACL(
 )
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test_app.db'
 app.config['SECRET_KEY'] = 'sqlite:///test_app.db'
+app.config['RRBAC_ANONYMOUS_ROLE'] = 'Anon'
 db = SQLAlchemy(app)
 
 login_manager = LoginManager()
@@ -119,6 +121,7 @@ class RoleRouteMap(db.Model, ACLRoleRouteMapMixin):
 
 
 @app.route('/uncovered_route')
+@rrbac._authenticate
 def uncovered_route():
     return Response('uncovered_route')
 
@@ -145,9 +148,11 @@ def db_data_setup():
     admin_role = Role(name='admin')
     base_role = Role(name='base')
     super_admin_role = Role(name='super_admin')
+    anon_role = Role(name='Anon')
     db.session.add(admin_role)
     db.session.add(base_role)
     db.session.add(super_admin_role)
+    db.session.add(anon_role)
     db.session.commit()
 
     # Add Users
@@ -168,18 +173,23 @@ def db_data_setup():
     # Add Routes
     get_route = Route(rule='/covered_route', method='GET')
     post_route = Route(rule='/covered_route', method='POST')
+    anon_route = Route(rule='/uncovered_route', method='GET')
     db.session.add(get_route)
     db.session.add(post_route)
+    db.session.add(anon_route)
     db.session.commit()
 
     # Add Role Route Map
     db.session.add(RoleRouteMap(role=admin_role, route=get_route))
     db.session.add(RoleRouteMap(role=super_admin_role, route=get_route))
     db.session.add(RoleRouteMap(role=super_admin_role, route=post_route))
+    db.session.add(RoleRouteMap(role=anon_role, route=anon_route))
     db.session.commit()
     db.session.refresh(base_user)
     db.session.refresh(admin_user)
     db.session.refresh(super_admin_user)
+    app.config['RRBAC_ROUTE_ROLE_MAP'] = {}
+    rrbac.init_app(app)
     return [base_user, admin_user, super_admin_user]
 
 
@@ -215,8 +225,12 @@ def config_data_setup():
         '/covered_route': {
             'GET': {'admin', 'super_admin'},
             'POST': {'super_admin'}
+        },
+        '/uncovered_route': {
+            'GET': {'admin', 'super_admin', 'Anon'}
         }
     }
+    rrbac.init_app(app)
     return [base_user, admin_user, super_admin_user]
 
 
@@ -268,6 +282,17 @@ def fixture_success(request):
         {
             'input': {
                 'method': 'GET',
+                'url_rule': '/uncovered_route',
+                'user': None,
+                'function': 'uncovered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
+                'method': 'GET',
                 'url_rule': '/covered_route',
                 'user': admin_user,
                 'function': 'covered_route'
@@ -296,6 +321,67 @@ def fixture_success(request):
             },
             'output': {
                 'status_code': 200
+            }
+        }
+    ]
+    request.addfinalizer(tear_down)
+    return data_to_send
+
+
+@pytest.fixture(scope='function')
+def fixture_failure(request):
+    """
+    Input:
+    Output:
+    Test Cases:
+    """
+
+    db.create_all()
+    base_user, admin_user, super_admin_user = db_data_setup()
+
+    data_to_send = [
+        {
+            'input': {
+                'method': 'POST',
+                'url_rule': '/covered_route',
+                'user': admin_user,
+                'function': 'covered_route'
+            },
+            'output': {
+                'status_code': 403
+            }
+        },
+        {
+            'input': {
+                'method': 'GET',
+                'url_rule': '/covered_route',
+                'user': base_user,
+                'function': 'covered_route'
+            },
+            'output': {
+                'status_code': 403
+            }
+        },
+        {
+            'input': {
+                'method': 'GET',
+                'url_rule': '/covered_route',
+                'user': None,
+                'function': 'covered_route'
+            },
+            'output': {
+                'status_code': 403
+            }
+        },
+        {
+            'input': {
+                'method': 'POST',
+                'url_rule': '/covered_route',
+                'user': None,
+                'function': 'covered_route'
+            },
+            'output': {
+                'status_code': 403
             }
         }
     ]
@@ -342,6 +428,17 @@ def fixture_role_route_config_success(request):
                 'method': 'GET',
                 'url_rule': '/uncovered_route',
                 'user': super_admin_user,
+                'function': 'uncovered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
+                'method': 'GET',
+                'url_rule': '/uncovered_route',
+                'user': None,
                 'function': 'uncovered_route'
             },
             'output': {
@@ -419,29 +516,12 @@ def fixture_role_route_config_failure(request):
             'output': {
                 'status_code': 403
             }
-        }
-    ]
-    request.addfinalizer(tear_down)
-    return data_to_send
-
-
-@pytest.fixture(scope='function')
-def fixture_failure(request):
-    """
-    Input:
-    Output:
-    Test Cases:
-    """
-
-    db.create_all()
-    base_user, admin_user, super_admin_user = db_data_setup()
-
-    data_to_send = [
+        },
         {
             'input': {
-                'method': 'POST',
+                'method': 'GET',
                 'url_rule': '/covered_route',
-                'user': admin_user,
+                'user': None,
                 'function': 'covered_route'
             },
             'output': {
@@ -450,9 +530,9 @@ def fixture_failure(request):
         },
         {
             'input': {
-                'method': 'GET',
+                'method': 'POST',
                 'url_rule': '/covered_route',
-                'user': base_user,
+                'user': None,
                 'function': 'covered_route'
             },
             'output': {
@@ -474,7 +554,8 @@ class TestRRBAC():
             with app.test_request_context(
                 data['input']['url_rule'], method=data['input']['method']
             ) as request_ctx:
-                request_ctx.user = data['input']['user']
+                if data['input']['user']:
+                    request_ctx.user = data['input']['user']
                 output = eval(data['input']['function'])()
                 assert output.status_code == data['output']['status_code']
                 print '\nScenario {} Passed'.format(index + 1)
@@ -486,7 +567,8 @@ class TestRRBAC():
             with app.test_request_context(
                 data['input']['url_rule'], method=data['input']['method']
             ) as request_ctx:
-                request_ctx.user = data['input']['user']
+                if data['input']['user']:
+                    request_ctx.user = data['input']['user']
                 output = eval(data['input']['function'])()
                 assert output.status_code == data['output']['status_code']
                 print '\nScenario {} Passed'.format(index + 1)
@@ -499,10 +581,15 @@ class TestRRBAC():
                 data['input']['url_rule'],
                 method=data['input']['method']
             ) as request_ctx:
-                request_ctx.user = data['input']['user']
+                if data['input']['user']:
+                    request_ctx.user = data['input']['user']
                 try:
                     eval(data['input']['function'])()
+                    result = 0
                 except Forbidden:
+                    result = 1
+                finally:
+                    assert result
                     print '\nScenario {} Passed'.format(index + 1)
 
     @pytest.mark.usefixtures("fixture_role_route_config_failure")
@@ -515,8 +602,13 @@ class TestRRBAC():
                 data['input']['url_rule'],
                 method=data['input']['method']
             ) as request_ctx:
-                request_ctx.user = data['input']['user']
+                if data['input']['user']:
+                    request_ctx.user = data['input']['user']
                 try:
                     eval(data['input']['function'])()
+                    result = 0
                 except Forbidden:
+                    result = 1
+                finally:
+                    assert result
                     print '\nScenario {} Passed'.format(index + 1)
