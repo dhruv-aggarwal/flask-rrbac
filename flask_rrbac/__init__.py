@@ -26,6 +26,7 @@ from .models import (
     ACLUserRoleMapMixin
 )
 from .messages import INIIALIZATION_ERRORS
+import re
 
 __all__ = [
     'RoleRouteBasedACL',
@@ -225,14 +226,31 @@ class RoleRouteBasedACL(object):
                 raise TypeError("{user} is not an instance of {model}".format(
                     current_user, self._user_model.__class__
                 ))
-            result = None
             route_role_config = app.config.get('RRBAC_ROUTE_ROLE_MAP', {})
-            if current_user.is_authenticated():
+            allow_static = app.config.get('RRBAC_ALLOW_STATIC', True)
+            if allow_static:
+                if self.is_static_fetch_endpoint(
+                    request.method,
+                    request.url_rule.rule,
+                    self.get_static_rules(app.url_map.iter_rules()),
+                ):
+                    result = True
+            elif current_user.is_authenticated():
                 result = self._check_permission(
                     request.method,
                     request.url_rule.rule,
                     current_user,
                     route_role_config
+                )
+            else:
+                result = self._check_permission(
+                    request.method,
+                    request.url_rule.rule,
+                    None,
+                    route_role_config,
+                    anonymous_role_name=app.config.get(
+                        'RRBAC_ANONYMOUS_ROLE', 'Anonymous'
+                    )
                 )
             if not result:
                 return self._auth_fail_hook_caller()
@@ -240,11 +258,85 @@ class RoleRouteBasedACL(object):
                 return f(*args, **kwargs)
         return decorated_function
 
+    def get_static_rules(self, rules_iterable):
+        return [
+            item.rule for item in rules_iterable
+            if not item.methods - {'GET', 'HEAD', 'OPTIONS'} and
+            re.match('.*static/*<filename>$', item.rule)
+        ]
+
+    def is_static_fetch_endpoint(self, method, requested_rule, rules_to_match):
+        if method != 'GET':
+            return False
+        for rule in rules_to_match:
+            if requested_rule == rule:
+                return True
+        return False
+
     def is_rule_matched(self, requested_rule, rule_to_match):
         # TODO: Add flask like route matching logic for giving access
         return requested_rule == rule_to_match
 
-    def _check_permission(self, method, rule, user, route_role_config={}):
+    def _check_permission_against_config(
+        self, method, rule, user, route_role_config, anonymous_role_name
+    ):
+        if user:
+            user_roles = self._role_model.query.filter(
+                self._role_model.is_deleted == (False)
+            ).join(
+                self._user_role_map_model
+            ).filter(
+                self._user_role_map_model.is_deleted == (False)
+            ).join(
+                self._user_model
+            ).filter(
+                self._user_model.get_id == user.id
+            ).with_entities(self._role_model.name)
+        else:
+            user_roles = [(anonymous_role_name)]
+        roles = set([r[0] for r in user_roles])
+        for key in route_role_config:
+            if self.is_rule_matched(rule, key):
+                return len(roles.intersection(
+                    route_role_config[key].get(request.method, set())
+                )) > 0
+        return False
+
+    def _check_permission_against_db(
+        self, method, rule, user, anonymous_role_name
+    ):
+        user_rules = self._route_model.query.join(
+            self._role_route_map_model
+        ).filter(
+            self._role_route_map_model.is_deleted == (False)
+        ).join(
+            self._role_model
+        ).filter(
+            self._role_model.is_deleted == (False)
+        )
+        if user:
+            user_rules = user_rules.join(
+                self._user_role_map_model
+            ).filter(
+                self._user_role_map_model.is_deleted == (False)
+            ).join(
+                self._user_model
+            ).filter(
+                self._user_model.get_id == user.id
+            )
+        else:
+            user_rules = user_rules.filter(
+                self._role_model.name == anonymous_role_name
+            )
+        user_rules = user_rules.with_entities(self._route_model.get_rule)
+        for user_rule in user_rules:
+            if self.is_rule_matched(rule, user_rule[0]):
+                return True
+        return False
+
+    def _check_permission(
+        self, method, rule, user, route_role_config={}, anonymous_role_name=''
+    ):
         """Return does the current user can access the resource.
         Example::
             @app.route('/some_url', methods=['GET', 'POST'])
@@ -258,51 +350,18 @@ class RoleRouteBasedACL(object):
         :param route_role_config: User provided config for route role mapping.
         """
         if route_role_config:
-            user_roles = self._role_model.query.filter(
-                self._role_model.is_deleted == (False)
-            ).join(
-                self._user_role_map_model
-            ).filter(
-                self._user_role_map_model.is_deleted == (False)
-            ).join(
-                self._user_model
-            ).filter(
-                self._user_model.get_id == user.id
-            ).with_entities(self._role_model.name)
-            roles = set([r[0] for r in user_roles])
-            for key in route_role_config:
-                if self.is_rule_matched(rule, key):
-                    return len(roles.intersection(
-                        route_role_config[key].get(request.method, set())
-                    )) > 0
+            return self._check_permission_against_config(
+                method, rule, user, route_role_config, anonymous_role_name
+            )
         else:
-            user_rules = self._route_model.query.join(
-                self._role_route_map_model
-            ).filter(
-                self._role_route_map_model.is_deleted == (False)
-            ).join(
-                self._role_model
-            ).filter(
-                self._role_model.is_deleted == (False)
-            ).join(
-                self._user_role_map_model
-            ).filter(
-                self._user_role_map_model.is_deleted == (False)
-            ).join(
-                self._user_model
-            ).filter(
-                self._user_model.get_id == user.id
-            ).filter(
-                self._route_model.get_method == request.method
-            ).with_entities(self._route_model.get_rule)
-            for user_rule in user_rules:
-                if self.is_rule_matched(rule, user_rule[0]):
-                    return True
+            return self._check_permission_against_db(
+                method, rule, user, anonymous_role_name
+            )
         return False
 
-    def get_app_routes(self):
+    def get_app_routes(self, app):
         rule_dict = {}
-        for rule in self.app.url_map.iter_rules():
+        for rule in app.url_map.iter_rules():
             rule_dict[rule.rule] = rule.methods - self.app.config.get(
                 'RRACL_IGNORED_METHODS', {'HEAD', 'OPTIONS', }
             )
