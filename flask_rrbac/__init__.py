@@ -27,6 +27,7 @@ from .models import (
 )
 from .messages import INIIALIZATION_ERRORS
 import re
+from .defaults import *
 
 __all__ = [
     'RoleRouteBasedACL',
@@ -103,13 +104,17 @@ class RoleRouteBasedACL(object):
             self, app
         )
 
-        self.route_role_config = app.config.get('RRBAC_ROUTE_ROLE_MAP', {})
-        self.allow_static = app.config.get('RRBAC_ALLOW_STATIC', True)
-        self.anonymous_role_name = app.config.get(
-            'RRBAC_ANONYMOUS_ROLE', 'Anonymous'
+        self.route_role_config = app.config.get(
+            'RRBAC_ROUTE_ROLE_MAP', RRBAC_ROUTE_ROLE_MAP
         )
-        self.ignored_methods = self.app.config.get(
-            'RRACL_IGNORED_METHODS', {'HEAD', 'OPTIONS', }
+        self.allow_static = app.config.get(
+            'RRBAC_ALLOW_STATIC', RRBAC_ALLOW_STATIC
+        )
+        self.anonymous_role_name = app.config.get(
+            'RRBAC_ANONYMOUS_ROLE', RRBAC_ANONYMOUS_ROLE
+        )
+        self.method_alternates = self.app.config.get(
+            'RRACL_METHOD_ALTERNATES', RRACL_METHOD_ALTERNATES
         )
 
     def as_role_model(self, model_cls):
@@ -235,15 +240,16 @@ class RoleRouteBasedACL(object):
                 raise TypeError("{user} is not an instance of {model}".format(
                     current_user, self._user_model.__class__
                 ))
+            method = self.method_alternates.get(request.method, request.method)
             if self.allow_static and self.is_static_fetch_endpoint(
-                request.method,
+                method,
                 request.url_rule.rule,
                 self.get_static_rules(app.url_map.iter_rules()),
             ):
                 result = True
             elif current_user.is_authenticated():
                 result = self._check_permission(
-                    request.method,
+                    method,
                     request.url_rule.rule,
                     current_user,
                     self.route_role_config,
@@ -251,7 +257,7 @@ class RoleRouteBasedACL(object):
                 )
             else:
                 result = self._check_permission(
-                    request.method,
+                    method,
                     request.url_rule.rule,
                     None,
                     self.route_role_config,
@@ -303,7 +309,9 @@ class RoleRouteBasedACL(object):
         for key in route_role_config:
             if self.is_rule_matched(rule, key):
                 return len(roles.intersection(
-                    route_role_config[key].get(request.method, set())
+                    route_role_config[key].get(
+                        method, set()
+                    )
                 )) > 0
         return False
 
@@ -355,6 +363,8 @@ class RoleRouteBasedACL(object):
         :param rule: The application rule.
         :param user: user who you need to check. Current user by default.
         :param route_role_config: User provided config for route role mapping.
+        :param anonymous_role_name: Role for anonymous users. This should be
+        the same as the name of the corresponding role in db/config
         """
         if route_role_config:
             return self._check_permission_against_config(
@@ -369,7 +379,11 @@ class RoleRouteBasedACL(object):
     def get_app_routes(self, app):
         rule_dict = {}
         for rule in app.url_map.iter_rules():
-            rule_dict[rule.rule] = rule.methods - self.ignored_methods
+            rule_dict[rule.rule] = set()
+            for method in rule.methods:
+                rule_dict[rule.rule].add(
+                    self.method_alternates.get(method, method)
+                )
         return rule_dict
 
     def _auth_fail_hook_caller(self):

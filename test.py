@@ -259,7 +259,29 @@ def fixture_success(request):
         },
         {
             'input': {
+                'method': 'HEAD',
+                'url_rule': '/uncovered_route',
+                'user': base_user,
+                'function': 'uncovered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
                 'method': 'GET',
+                'url_rule': '/uncovered_route',
+                'user': admin_user,
+                'function': 'uncovered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
+                'method': 'HEAD',
                 'url_rule': '/uncovered_route',
                 'user': admin_user,
                 'function': 'uncovered_route'
@@ -281,6 +303,17 @@ def fixture_success(request):
         },
         {
             'input': {
+                'method': 'HEAD',
+                'url_rule': '/uncovered_route',
+                'user': super_admin_user,
+                'function': 'uncovered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
                 'method': 'GET',
                 'url_rule': '/uncovered_route',
                 'user': None,
@@ -292,7 +325,29 @@ def fixture_success(request):
         },
         {
             'input': {
+                'method': 'HEAD',
+                'url_rule': '/uncovered_route',
+                'user': None,
+                'function': 'uncovered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
                 'method': 'GET',
+                'url_rule': '/covered_route',
+                'user': admin_user,
+                'function': 'covered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
+                'method': 'HEAD',
                 'url_rule': '/covered_route',
                 'user': admin_user,
                 'function': 'covered_route'
@@ -315,6 +370,17 @@ def fixture_success(request):
         {
             'input': {
                 'method': 'GET',
+                'url_rule': '/covered_route',
+                'user': super_admin_user,
+                'function': 'covered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
+                'method': 'HEAD',
                 'url_rule': '/covered_route',
                 'user': super_admin_user,
                 'function': 'covered_route'
@@ -414,7 +480,29 @@ def fixture_role_route_config_success(request):
         },
         {
             'input': {
+                'method': 'HEAD',
+                'url_rule': '/uncovered_route',
+                'user': base_user,
+                'function': 'uncovered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
                 'method': 'GET',
+                'url_rule': '/uncovered_route',
+                'user': admin_user,
+                'function': 'uncovered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
+                'method': 'HEAD',
                 'url_rule': '/uncovered_route',
                 'user': admin_user,
                 'function': 'uncovered_route'
@@ -436,6 +524,17 @@ def fixture_role_route_config_success(request):
         },
         {
             'input': {
+                'method': 'HEAD',
+                'url_rule': '/uncovered_route',
+                'user': super_admin_user,
+                'function': 'uncovered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
                 'method': 'GET',
                 'url_rule': '/uncovered_route',
                 'user': None,
@@ -447,7 +546,29 @@ def fixture_role_route_config_success(request):
         },
         {
             'input': {
+                'method': 'HEAD',
+                'url_rule': '/uncovered_route',
+                'user': None,
+                'function': 'uncovered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
                 'method': 'GET',
+                'url_rule': '/covered_route',
+                'user': admin_user,
+                'function': 'covered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
+                'method': 'HEAD',
                 'url_rule': '/covered_route',
                 'user': admin_user,
                 'function': 'covered_route'
@@ -470,6 +591,17 @@ def fixture_role_route_config_success(request):
         {
             'input': {
                 'method': 'GET',
+                'url_rule': '/covered_route',
+                'user': super_admin_user,
+                'function': 'covered_route'
+            },
+            'output': {
+                'status_code': 200
+            }
+        },
+        {
+            'input': {
+                'method': 'HEAD',
                 'url_rule': '/covered_route',
                 'user': super_admin_user,
                 'function': 'covered_route'
