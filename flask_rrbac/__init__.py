@@ -71,14 +71,14 @@ class RoleRouteBasedACL(object):
 
     def __init__(self, app=None, **kwargs):
         """Initialize with app."""
-        self.set_role_model(kwargs.get('role_model', ACLRoleMixin))
-        self.set_user_model(kwargs.get('user_model', ACLUserMixin))
-        self.set_route_model(kwargs.get('route_model', ACLRouteMixin))
+        self.set_role_model(kwargs.get('role_model'))
+        self.set_user_model(kwargs.get('user_model'))
+        self.set_route_model(kwargs.get('route_model'))
         self.set_role_route_map_model(
-            kwargs.get('role_route_map_model', ACLRoleRouteMapMixin)
+            kwargs.get('role_route_map_model')
         )
         self.set_user_role_map_model(
-            kwargs.get('user_role_map_model', ACLUserRoleMapMixin)
+            kwargs.get('user_role_map_model')
         )
         self.set_user_loader(
             kwargs.get('user_loader', lambda: current_user)
@@ -116,6 +116,8 @@ class RoleRouteBasedACL(object):
         self.method_alternates = self.app.config.get(
             'RRACL_METHOD_ALTERNATES', RRACL_METHOD_ALTERNATES
         )
+        self.static_rules = self.get_static_rules(app.url_map.iter_rules())
+        # app.before_request(self._authenticate)
 
     def as_role_model(self, model_cls):
         """A decorator to set custom model or role.
@@ -243,8 +245,7 @@ class RoleRouteBasedACL(object):
             method = self.method_alternates.get(request.method, request.method)
             if self.allow_static and self.is_static_fetch_endpoint(
                 method,
-                request.url_rule.rule,
-                self.get_static_rules(app.url_map.iter_rules()),
+                request.url_rule.rule
             ):
                 result = True
             elif current_user.is_authenticated():
@@ -276,10 +277,10 @@ class RoleRouteBasedACL(object):
             re.match('.*static/*<filename>$', item.rule)
         ]
 
-    def is_static_fetch_endpoint(self, method, requested_rule, rules_to_match):
+    def is_static_fetch_endpoint(self, method, requested_rule):
         if method != 'GET':
             return False
-        for rule in rules_to_match:
+        for rule in self.static_rules:
             if requested_rule == rule:
                 return True
         return False
