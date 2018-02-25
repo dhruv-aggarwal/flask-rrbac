@@ -12,6 +12,9 @@ class ACLRoleRouteMapMixin(object):
 
     @property
     def get_role(self):
+        """
+        Get the role attached to this entry. This has to be implemented.
+        """
         try:
             return self.role
         except AttributeError:
@@ -19,6 +22,9 @@ class ACLRoleRouteMapMixin(object):
 
     @hybrid_property
     def get_id(self):
+        """
+        Get the unique identifier for this entry. This has to be implemented.
+        """
         try:
             return self.id
         except AttributeError:
@@ -26,6 +32,9 @@ class ACLRoleRouteMapMixin(object):
 
     @property
     def get_route(self):
+        """
+        Get the route attached to this entry. This has to be implemented.
+        """
         try:
             return self.route
         except AttributeError:
@@ -33,6 +42,14 @@ class ACLRoleRouteMapMixin(object):
 
     @hybrid_property
     def is_deleted(self):
+        """
+        Check if this entry is active or not
+        An entry is active when the following conditions are met:
+            1. deleted_at is empty (None). This means that this entry will not
+            expire
+            2. deleted_at is in the past. This means that the entry has already
+            expired
+        """
         try:
             if self.deleted_at is None:
                 return False

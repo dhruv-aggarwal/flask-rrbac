@@ -13,6 +13,9 @@ class ACLUserMixin(object):
         self.roles.add(role)
 
     def add_roles(self, list_of_roles):
+        """Add a role to this user.
+        :param list_of_roles: Roles to add.
+        """
         for role in list_of_roles:
             self.add_role(role)
 
@@ -22,6 +25,8 @@ class ACLUserMixin(object):
 
     @hybrid_property
     def get_id(self):
+        """Get the unique identifier for a user.
+        """
         try:
             return self.id
         except AttributeError:

@@ -10,6 +10,14 @@ class ACLRoleMixin(object):
 
     @hybrid_property
     def is_deleted(self):
+        """
+        Check if this entry is active or not
+        An entry is active when the following conditions are met:
+            1. deleted_at is empty (None). This means that this entry will not
+            expire
+            2. deleted_at is in the past. This means that the entry has already
+            expired
+        """
         try:
             if self.deleted_at is None:
                 return False

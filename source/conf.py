@@ -163,6 +163,3 @@ texinfo_documents = [
      author, 'Flask-RRBAC', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
-

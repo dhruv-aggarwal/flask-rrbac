@@ -14,10 +14,13 @@ It will:
 
 However, it does not:
 
-- Impose a particular database or other storage method on you. You are
-  entirely in charge of how the user is loaded.
+- Impose a particular database or other storage method on you.
 - Create the reqiured models for you.
 - Make the required entries for you in the database.
+
+
+Table Of Contents
+
 
 .. contents::
    :local:
@@ -74,6 +77,140 @@ You will need to provide the following callbacks:
         def permission_denied_hook():
             abort('User is not authorized!', 403)
 
+    `~RoleRouteBasedACL.as_role_model` decorator.
+    This decorator is used to set the model to be used for storing the roles.
+    For example::
+
+        @rrbac.as_role_model
+        class Role(db.Model, ACLRoleMixin):
+            __tablename__ = 'roles'
+
+            id = db.Column(db.Integer, nullable=False, primary_key=True)
+            name = db.Column(db.String(128), nullable=False)
+            deleted_at = db.Column(db.DateTime, default=None, nullable=True)
+
+
+    `~RoleRouteBasedACL.as_role_model` decorator.
+    This decorator is used to set the model to be used for storing the roles.
+    For example::
+
+        @rrbac.as_role_model
+        class Role(db.Model, ACLRoleMixin):
+            __tablename__ = 'roles'
+
+            id = db.Column(db.Integer, nullable=False, primary_key=True)
+            name = db.Column(db.String(128), nullable=False)
+            deleted_at = db.Column(db.DateTime, default=None, nullable=True)
+
+
+    `~RoleRouteBasedACL.as_role_model` decorator.
+    This decorator is used to set the model to be used for storing the roles.
+    For example::
+
+        @rrbac.as_role_model
+        class Role(db.Model, ACLRoleMixin):
+            __tablename__ = 'roles'
+
+            id = db.Column(db.Integer, nullable=False, primary_key=True)
+            name = db.Column(db.String(128), nullable=False)
+            deleted_at = db.Column(db.DateTime, default=None, nullable=True)
+
+    `~RoleRouteBasedACL.as_route_model` decorator.
+    This decorator is used to set the model to be used for storing the routes.
+    For example::
+
+        @rrbac.as_route_model
+        class Route(db.Model, ACLRouteMixin):
+            __tablename__ = 'routes'
+
+            id = db.Column(db.Integer, nullable=False, primary_key=True)
+            method = db.Column(db.String(10), nullable=False)
+            rule = db.Column(db.String(255), nullable=False)
+            deleted_at = db.Column(db.DateTime, default=None, nullable=True)
+
+    `~RoleRouteBasedACL.as_user_model` decorator.
+    This decorator is used to set the model to be used for storing the users.
+    For example::
+
+        @rrbac.as_user_model
+        class User(db.Model, ACLUserMixin, UserMixin):
+            __tablename__ = 'users'
+
+            id = db.Column(db.Integer, nullable=False, primary_key=True)
+            name = db.Column(db.String(128), nullable=False)
+            deleted_at = db.Column(db.DateTime, default=None, nullable=True)
+
+    `~RoleRouteBasedACL.as_user_role_map_model` decorator.
+    This decorator is used to set the association class
+    to be used for storing the user role mappings.
+    For example::
+
+        @rrbac.as_user_role_map_model
+        class UserRoleMap(db.Model, ACLUserRoleMapMixin):
+            __tablename__ = 'user_role_map'
+
+            id = db.Column(db.Integer, nullable=False, primary_key=True)
+            user_id = db.Column(
+                db.Integer,
+                db.ForeignKey('users.id'),
+                nullable=False
+            )
+            role_id = db.Column(
+                db.Integer,
+                db.ForeignKey('roles.id'),
+                nullable=False
+            )
+            deleted_at = db.Column(db.DateTime, default=None, nullable=True)
+
+            user = db.relationship(
+                'User', backref=db.backref(
+                    'user_role_map_entries',
+                    cascade='all,delete-orphan'
+                )
+            )
+            role = db.relationship(
+                'Role', backref=db.backref(
+                    'user_role_map_entries',
+                    cascade='all,delete-orphan'
+                )
+            )
+
+    `~RoleRouteBasedACL.as_role_route_map_model` decorator.
+    This decorator is used to set the association class
+    to be used for storing the role route mappings.
+    For example::
+
+        @rrbac.as_role_route_map_model
+        class RoleRouteMap(db.Model, ACLRoleRouteMapMixin):
+            __tablename__ = 'role_route_map'
+
+            id = db.Column(db.Integer, nullable=False, primary_key=True)
+            route_id = db.Column(
+                db.Integer,
+                db.ForeignKey('routes.id'),
+                nullable=False
+            )
+            role_id = db.Column(
+                db.Integer,
+                db.ForeignKey('roles.id'),
+                nullable=False
+            )
+            deleted_at = db.Column(db.DateTime, default=None, nullable=True)
+
+            route = db.relationship(
+                'Route', backref=db.backref(
+                    'role_route_map_entries',
+                    cascade='all,delete-orphan'
+                )
+            )
+            role = db.relationship(
+                'Role', backref=db.backref(
+                    'role_route_map_entries',
+                    cascade='all,delete-orphan'
+                )
+            )
+
+
 Your User Class
 ===============
 The class that you use to represent users needs to implement these properties
@@ -84,87 +221,96 @@ and methods:
     have provided valid credentials. (Only authenticated users will fulfill
     the criteria of `login_required`.)
 
-`is_active`
-    This property should return `True` if this is an active user - in addition
-    to being authenticated, they also have activated their account, not been
-    suspended, or any condition your application has for rejecting an account.
-    Inactive accounts may not log in (without being forced of course).
-
-`is_anonymous`
-    This property should return `True` if this is an anonymous user. (Actual
-    users should return `False` instead.)
-
-`get_id()`
-    This method must return a `unicode` that uniquely identifies this user,
-    and can be used to load the user from the `~LoginManager.user_loader`
-    callback. Note that this **must** be a `unicode` - if the ID is natively
-    an `int` or some other type, you will need to convert it to `unicode`.
-
 To make implementing a user class easier, you can inherit from `UserMixin`,
 which provides default implementations for all of these properties and methods.
 (It's not required, though.)
-
-Login Example
-=============
-
-Once a user has authenticated, you log them in with the `login_user`
-function.
-
-    For example:
-
-.. code-block:: python
-
-    @app.route('/login', methods=['GET', 'POST'])
-    def login():
-        # Here we use a class of some kind to represent and validate our
-        # client-side form data. For example, WTForms is a library that will
-        # handle this for us, and we use a custom LoginForm to validate.
-        form = LoginForm()
-        if form.validate_on_submit():
-            # Login and validate the user.
-            # user should be an instance of your `User` class
-            login_user(user)
-
-            flask.flash('Logged in successfully.')
-
-            next = flask.request.args.get('next')
-            # is_safe_url should check if the url is safe for redirects.
-            # See http://flask.pocoo.org/snippets/62/ for an example.
-            if not is_safe_url(next):
-                return flask.abort(400)
-
-            return flask.redirect(next or flask.url_for('index'))
-        return flask.render_template('login.html', form=form)
-
-It's that simple. You can then access the logged-in user with the
-`current_user` proxy, which is available in every template::
-
-    {% if current_user.is_authenticated %}
-      Hi {{ current_user.name }}!
-    {% endif %}
-
-Views that require your users to be logged in can be
-decorated with the `login_required` decorator::
-
-    @app.route("/settings")
-    @login_required
-    def settings():
-        pass
-
-When the user is ready to log out::
-
-    @app.route("/logout")
-    @login_required
-    def logout():
-        logout_user()
-        return redirect(somewhere)
-
-They will be logged out, and any cookies for their session will be cleaned up.
+This class should also inherit sqlalchemy's Model class (db.Model).
+Check test.py for example implementation
 
 
-API Documentation
-=================
-This documentation is automatically generated from Flask-Login's source code.
+Your Role Class
+===============
+The class that you use to represent roles needs to implement these properties
+and methods:
+
+`is_deleted`
+    This property should return `True` if the user is deleted
+
+You can inherit from `ACLRoleMixin`, which provides default implementations
+for all of these properties and methods.
+(It's not required, though.)
+This class should also inherit sqlalchemy's Model class (db.Model).
+Check test.py for example implementation
+
+
+Your Route Class
+===============
+The class that you use to represent routes (paths/rules) needs to implement
+these properties and methods:
+
+`is_deleted`
+    This property should return `True` if the user is deleted
+
+`get_method`
+    This property should return the request method for this rule
+
+`get_rule`
+    This property should return the url rule for which this route entry was
+    created.
+
+You can inherit from `ACLRouteMixin`, which provides default implementations
+for all of these properties and methods.
+(It's not required, though.)
+This class should also inherit sqlalchemy's Model class (db.Model).
+Check test.py for example implementation
+
+
+Your UserRoleMap Class
+===============
+The class that you use to represent the mapping between user and role.
+This is an association class and it needs to implement these properties and methods:
+
+`is_deleted`
+    This property should return `True` if the user is deleted
+
+`get_id`
+    This property should return the id for this entry
+
+`role`
+    The role attached to this map entry
+
+`user`
+    The user attached to this map entry
+
+You can inherit from `ACLUserRoleMapMixin`, which provides default implementations
+for all of these properties and methods.
+(It's not required, though.)
+This class should also inherit sqlalchemy's Model class (db.Model).
+Check test.py for example implementation
+
+
+Your RoleRouteMap Class
+===============
+The class that you use to represent the mapping between route and role.
+This is an association class and it needs to implement these properties and methods:
+
+`is_deleted`
+    This property should return `True` if the user is deleted
+
+`get_id`
+    This property should return the id for this entry
+
+`role`
+    The role attached to this map entry
+
+`route`
+    The route attached to this map entry
+
+You can inherit from `ACLRoleRouteMapMixin`, which provides default implementations
+for all of these properties and methods.
+(It's not required, though.)
+This class should also inherit sqlalchemy's Model class (db.Model).
+Check test.py for example implementation
 
 
 User Object Helpers
