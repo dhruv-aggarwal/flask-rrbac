@@ -716,8 +716,8 @@ class TestRRBAC():
                 if data['input']['user']:
                     request_ctx.user = data['input']['user']
                 try:
-                    eval(data['input']['function'])()
                     result = 0
+                    eval(data['input']['function'])()
                 except Forbidden:
                     result = 1
                 finally:
@@ -737,8 +737,8 @@ class TestRRBAC():
                 if data['input']['user']:
                     request_ctx.user = data['input']['user']
                 try:
-                    eval(data['input']['function'])()
                     result = 0
+                    eval(data['input']['function'])()
                 except Forbidden:
                     result = 1
                 finally:
