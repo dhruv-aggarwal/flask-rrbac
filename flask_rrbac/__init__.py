@@ -104,8 +104,8 @@ class RoleRouteBasedACL(object):
             self, app
         )
 
-        self.route_role_config = app.config.get(
-            'RRBAC_ROUTE_ROLE_MAP', RRBAC_ROUTE_ROLE_MAP
+        self.role_route_config = app.config.get(
+            'RRBAC_ROLE_ROUTE_MAP', RRBAC_ROLE_ROUTE_MAP
         )
         # self.allow_static = app.config.get(
         #     'RRBAC_ALLOW_STATIC', RRBAC_ALLOW_STATIC
@@ -223,7 +223,7 @@ class RoleRouteBasedACL(object):
             assert app, INIIALIZATION_ERRORS['app']
             assert self._role_model, INIIALIZATION_ERRORS['role']
             assert self._user_model, INIIALIZATION_ERRORS['user']
-            if not self.route_role_config:
+            if not self.role_route_config:
                 assert self._route_model, INIIALIZATION_ERRORS['route']
                 assert self._role_route_map_model, \
                     INIIALIZATION_ERRORS['role_route_map']
@@ -254,7 +254,7 @@ class RoleRouteBasedACL(object):
                     method,
                     request.path,
                     current_user,
-                    self.route_role_config,
+                    self.role_route_config,
                     anonymous_role_name=self.anonymous_role_name
                 )
             else:
@@ -262,7 +262,7 @@ class RoleRouteBasedACL(object):
                     method,
                     request.path,
                     None,
-                    self.route_role_config,
+                    self.role_route_config,
                     anonymous_role_name=self.anonymous_role_name
                 )
             if not result:
@@ -307,7 +307,7 @@ class RoleRouteBasedACL(object):
         return regex_object.group() == path
 
     def _check_permission_against_config(
-        self, method, path, user, route_role_config, anonymous_role_name
+        self, method, path, user, role_route_config, anonymous_role_name
     ):
         """
         This function checks whether the user is allowed to access the incoming
@@ -326,7 +326,7 @@ class RoleRouteBasedACL(object):
             :param method: (type: str) Http method of the incoming request
             :param path: (type: str) Path of the incoming request
             :param user: (type: UserMixin) Current user
-            :param route_role_config: (type: dict) Dict for role route mapping
+            :param role_route_config: (type: dict) Dict for role route mapping
             :param anonymous_role_name: (type: str) Name of the Anonymous Role
 
         Output:
@@ -347,13 +347,12 @@ class RoleRouteBasedACL(object):
             ).with_entities(self._role_model.name).distinct().all()
         user_roles += [(anonymous_role_name,)]
         roles = set([r[0] for r in user_roles])
-        for key in route_role_config:
-            if self.is_rule_matched(path, key):
-                return len(roles.intersection(
-                    route_role_config[key].get(
-                        method, set()
-                    )
-                )) > 0
+
+        for user_role in roles:
+            regexes = role_route_config.get(user_role, {}).get(method, [])
+            for regex in regexes:
+                if self.is_rule_matched(path, regex):
+                    return True
         return False
 
     def _check_permission_against_db(
@@ -413,7 +412,7 @@ class RoleRouteBasedACL(object):
         return False
 
     def _check_permission(
-        self, method, path, user, route_role_config={}, anonymous_role_name=''
+        self, method, path, user, role_route_config={}, anonymous_role_name=''
     ):
         """Return does the current user can access the resource.
         Example::
@@ -425,13 +424,13 @@ class RoleRouteBasedACL(object):
         :param method: The method wait to check.
         :param path: The incoming request path.
         :param user: user who you need to check. Current user by default.
-        :param route_role_config: User provided config for route role mapping.
+        :param role_route_config: User provided config for role route mapping.
         :param anonymous_role_name: Role for anonymous users. This should be
         the same as the name of the corresponding role in db/config
         """
-        if route_role_config:
+        if role_route_config:
             return self._check_permission_against_config(
-                method, path, user, route_role_config, anonymous_role_name
+                method, path, user, role_route_config, anonymous_role_name
             )
         else:
             return self._check_permission_against_db(
