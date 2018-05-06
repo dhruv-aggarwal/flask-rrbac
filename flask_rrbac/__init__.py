@@ -223,9 +223,10 @@ class RoleRouteBasedACL(object):
             assert app, INIIALIZATION_ERRORS['app']
             assert self._role_model, INIIALIZATION_ERRORS['role']
             assert self._user_model, INIIALIZATION_ERRORS['user']
-            assert self._route_model, INIIALIZATION_ERRORS['route']
-            assert self._role_route_map_model, \
-                INIIALIZATION_ERRORS['role_route_map']
+            if not self.route_role_config:
+                assert self._route_model, INIIALIZATION_ERRORS['route']
+                assert self._role_route_map_model, \
+                    INIIALIZATION_ERRORS['role_route_map']
             assert self._user_role_map_model, \
                 INIIALIZATION_ERRORS['user_role_map']
             assert self._user_loader, INIIALIZATION_ERRORS['user_loader']
