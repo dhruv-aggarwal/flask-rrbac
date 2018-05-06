@@ -8,7 +8,7 @@ with open(join(CURRENT_DIR, "README.md")) as long_description_file:
 
 setup(
     name="Flask-RRBAC",
-    version="0.1.0",
+    version="0.1.1",
     url="https://github.com/dhruvaggarwal043/flask-rrbac",
     author="Dhruv Aggarwal",
     author_email="dhruvaggarwal043@gmail.com",

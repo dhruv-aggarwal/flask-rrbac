@@ -4,7 +4,7 @@ Flask-RRBAC Changelog
 (in development)
 
 
-Release 0.1.0 (Jan 28, 2018)
+Release 0.1.1 (May 06, 2018)
 ----------------------------
 
 - First public release.
