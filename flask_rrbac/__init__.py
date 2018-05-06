@@ -107,16 +107,16 @@ class RoleRouteBasedACL(object):
         self.route_role_config = app.config.get(
             'RRBAC_ROUTE_ROLE_MAP', RRBAC_ROUTE_ROLE_MAP
         )
-        self.allow_static = app.config.get(
-            'RRBAC_ALLOW_STATIC', RRBAC_ALLOW_STATIC
-        )
+        # self.allow_static = app.config.get(
+        #     'RRBAC_ALLOW_STATIC', RRBAC_ALLOW_STATIC
+        # )
         self.anonymous_role_name = app.config.get(
             'RRBAC_ANONYMOUS_ROLE', RRBAC_ANONYMOUS_ROLE
         )
         self.method_alternates = self.app.config.get(
             'RRACL_METHOD_ALTERNATES', RRACL_METHOD_ALTERNATES
         )
-        self.static_rules = self.get_static_rules(app.url_map.iter_rules())
+        # self.static_rules = self.get_static_rules(app.url_map.iter_rules())
         # app.before_request(self._authenticate)
 
     def as_role_model(self, model_cls):
@@ -244,12 +244,12 @@ class RoleRouteBasedACL(object):
                     current_user, self._user_model.__class__
                 ))
             method = self.method_alternates.get(request.method, request.method)
-            if self.allow_static and self.is_static_fetch_endpoint(
-                method,
-                request.url_rule.rule
-            ):
-                result = True
-            elif current_user.is_authenticated():
+            # if self.allow_static and self.is_static_fetch_endpoint(
+            #     method,
+            #     request.url_rule.rule
+            # ):
+            #     result = True
+            if current_user.is_authenticated():
                 result = self._check_permission(
                     method,
                     request.url_rule.rule,
@@ -271,20 +271,20 @@ class RoleRouteBasedACL(object):
                 return f(*args, **kwargs)
         return decorated_function
 
-    def get_static_rules(self, rules_iterable):
-        return [
-            item.rule for item in rules_iterable
-            if not item.methods - {'GET', 'HEAD', 'OPTIONS'} and
-            re.match('.*static/*<filename>$', item.rule)
-        ]
+    # def get_static_rules(rules_iterable):
+    #     return [
+    #         item.rule for item in rules_iterable
+    #         if not item.methods - {'GET', 'HEAD', 'OPTIONS'} and
+    #         re.match('.*static*<path:filename>$', item.rule)
+    #     ]
 
-    def is_static_fetch_endpoint(self, method, requested_rule):
-        if method != 'GET':
-            return False
-        for rule in self.static_rules:
-            if requested_rule == rule:
-                return True
-        return False
+    # def is_static_fetch_endpoint(self, method, requested_rule):
+    #     if method != 'GET':
+    #         return False
+    #     for rule in self.static_rules:
+    #         if requested_rule == rule:
+    #             return True
+    #     return False
 
     def is_rule_matched(self, requested_rule, rule_to_match):
         # TODO: Add flask like route matching logic for giving access

@@ -24,7 +24,7 @@ If True, they will be mapped by default.
 Example:
     app.config['RRBAC_ALLOW_STATIC'] = True
 """
-RRBAC_ALLOW_STATIC = True
+# RRBAC_ALLOW_STATIC = True
 
 """
 Determines the name of the Anonymous role. This name will be matched in the
