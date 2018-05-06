@@ -26,7 +26,7 @@ from .models import (
     ACLUserRoleMapMixin
 )
 from .messages import INIIALIZATION_ERRORS
-# import re
+import re
 from .defaults import *
 
 __all__ = [
@@ -252,7 +252,7 @@ class RoleRouteBasedACL(object):
             if current_user.is_authenticated():
                 result = self._check_permission(
                     method,
-                    request.url_rule.rule,
+                    request.path,
                     current_user,
                     self.route_role_config,
                     anonymous_role_name=self.anonymous_role_name
@@ -260,7 +260,7 @@ class RoleRouteBasedACL(object):
             else:
                 result = self._check_permission(
                     method,
-                    request.url_rule.rule,
+                    request.path,
                     None,
                     self.route_role_config,
                     anonymous_role_name=self.anonymous_role_name
@@ -286,9 +286,25 @@ class RoleRouteBasedACL(object):
     #             return True
     #     return False
 
-    def is_rule_matched(self, requested_rule, rule_to_match):
-        # TODO: Add flask like route matching logic for giving access
-        return requested_rule == rule_to_match
+    def is_rule_matched(self, path, rule_to_match):
+        """
+        This function matches the incoming path against the user's rules.
+
+        This funtion determines whether the rule selected matches the incoming
+        url. If the url matches the specified pattern, the function evaluates
+        to True. Else False.
+
+        Inputs:
+            path (type: str) the url hit
+            rule_to_match (type: str) the pattern which the user has access to
+        Output:
+            Boolean
+
+        """
+        regex_object = re.match(rule_to_match, path)
+        if not regex_object:
+            return False
+        return regex_object.group() == path
 
     def _check_permission_against_config(
         self, method, rule, user, route_role_config, anonymous_role_name
