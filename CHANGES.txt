@@ -11,7 +11,7 @@ New: Add regex support in specifying path/rule info (GITHUB-2)
 Edit: ROUTE_ROLE_MAP config variable has been replaced with ROLE_ROUTE_MAP. Breaking change.
 
 
-Release 0.1.0 (Jan 28, 2018)
-----------------------------
+Release 0.1.1 (May 06, 2018)
+---------------------------
 
 - First public release.
