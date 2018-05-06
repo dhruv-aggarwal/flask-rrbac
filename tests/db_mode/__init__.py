@@ -1,4 +1,4 @@
-from flask import Flask, Response
+from flask import Flask, Response, request
 from flask_rrbac import RoleRouteBasedACL
 from flask_sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager
@@ -33,6 +33,12 @@ def uncovered_route():
 @rrbac._authenticate
 def covered_route():
     return Response('covered_route')
+
+
+@app.route('/covered_route/<int>', methods=['GET', 'POST'])
+@rrbac._authenticate
+def number_covered_route():
+    return Response('{}'.format(request.method))
 
 
 def tear_down():

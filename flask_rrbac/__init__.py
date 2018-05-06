@@ -26,7 +26,7 @@ from .models import (
     ACLUserRoleMapMixin
 )
 from .messages import INIIALIZATION_ERRORS
-# import re
+import re
 from .defaults import *
 
 __all__ = [
@@ -104,8 +104,8 @@ class RoleRouteBasedACL(object):
             self, app
         )
 
-        self.route_role_config = app.config.get(
-            'RRBAC_ROUTE_ROLE_MAP', RRBAC_ROUTE_ROLE_MAP
+        self.role_route_config = app.config.get(
+            'RRBAC_ROLE_ROUTE_MAP', RRBAC_ROLE_ROUTE_MAP
         )
         # self.allow_static = app.config.get(
         #     'RRBAC_ALLOW_STATIC', RRBAC_ALLOW_STATIC
@@ -223,7 +223,7 @@ class RoleRouteBasedACL(object):
             assert app, INIIALIZATION_ERRORS['app']
             assert self._role_model, INIIALIZATION_ERRORS['role']
             assert self._user_model, INIIALIZATION_ERRORS['user']
-            if not self.route_role_config:
+            if not self.role_route_config:
                 assert self._route_model, INIIALIZATION_ERRORS['route']
                 assert self._role_route_map_model, \
                     INIIALIZATION_ERRORS['role_route_map']
@@ -252,17 +252,17 @@ class RoleRouteBasedACL(object):
             if current_user.is_authenticated():
                 result = self._check_permission(
                     method,
-                    request.url_rule.rule,
+                    request.path,
                     current_user,
-                    self.route_role_config,
+                    self.role_route_config,
                     anonymous_role_name=self.anonymous_role_name
                 )
             else:
                 result = self._check_permission(
                     method,
-                    request.url_rule.rule,
+                    request.path,
                     None,
-                    self.route_role_config,
+                    self.role_route_config,
                     anonymous_role_name=self.anonymous_role_name
                 )
             if not result:
@@ -286,13 +286,52 @@ class RoleRouteBasedACL(object):
     #             return True
     #     return False
 
-    def is_rule_matched(self, requested_rule, rule_to_match):
-        # TODO: Add flask like route matching logic for giving access
-        return requested_rule == rule_to_match
+    def is_rule_matched(self, path, rule_to_match):
+        """
+        This function matches the incoming path against the user's rules.
+
+        This funtion determines whether the rule selected matches the incoming
+        url. If the url matches the specified pattern, the function evaluates
+        to True. Else False.
+
+        Inputs:
+            :param path: (type: str) the url hit
+            :param rule_to_match: (type: str)
+            the pattern which the user has access to
+        Output:
+            Boolean
+        """
+        regex_object = re.match(rule_to_match, path)
+        if not regex_object:
+            return False
+        return regex_object.group() == path
 
     def _check_permission_against_config(
-        self, method, rule, user, route_role_config, anonymous_role_name
+        self, method, path, user, role_route_config, anonymous_role_name
     ):
+        """
+        This function checks whether the user is allowed to access the incoming
+        request.
+
+        The following things are evaluated when checking the user mapping:
+        1. user role map entry is valid
+        2. there is at least 1 route in user role map entries whose regex
+        matches the incoming path
+        3. the match rule entry and the method of the path are the same
+
+        Returns True when the user is allowed to access that request.
+        False otherwise.
+
+        Input:
+            :param method: (type: str) Http method of the incoming request
+            :param path: (type: str) Path of the incoming request
+            :param user: (type: UserMixin) Current user
+            :param role_route_config: (type: dict) Dict for role route mapping
+            :param anonymous_role_name: (type: str) Name of the Anonymous Role
+
+        Output:
+            Boolean
+        """
         user_roles = []
         if user:
             user_roles = self._role_model.query.filter(
@@ -308,18 +347,39 @@ class RoleRouteBasedACL(object):
             ).with_entities(self._role_model.name).distinct().all()
         user_roles += [(anonymous_role_name,)]
         roles = set([r[0] for r in user_roles])
-        for key in route_role_config:
-            if self.is_rule_matched(rule, key):
-                return len(roles.intersection(
-                    route_role_config[key].get(
-                        method, set()
-                    )
-                )) > 0
+
+        for user_role in roles:
+            regexes = role_route_config.get(user_role, {}).get(method, [])
+            for regex in regexes:
+                if self.is_rule_matched(path, regex):
+                    return True
         return False
 
     def _check_permission_against_db(
-        self, method, rule, user, anonymous_role_name
+        self, method, path, user, anonymous_role_name
     ):
+        """
+        This function checks whether the user is allowed to access the incoming
+        request.
+
+        The following things are evaluated when checking the user mapping:
+        1. user role map entry is valid
+        2. there is at least 1 route in user role map entries whose regex
+        matches the incoming path
+        3. the match rule entry and the method of the path are the same
+
+        Returns True when the user is allowed to access that request.
+        False otherwise.
+
+        Input:
+            :param method: (type: str) Http method of the incoming request
+            :param path: (type: str) Path of the incoming request
+            :param user: (type: UserMixin) Current user
+            :param anonymous_role_name: (type: str) Name of the Anonymous Role
+
+        Output:
+            Boolean
+        """
         all_rules = self._route_model.query.filter(
             self._route_model.get_method == method
         ).join(
@@ -347,12 +407,12 @@ class RoleRouteBasedACL(object):
         user_rules = \
             user_rules.with_entities(self._route_model.get_rule).distinct()
         for user_rule in user_rules:
-            if self.is_rule_matched(rule, user_rule[0]):
+            if self.is_rule_matched(path, user_rule[0]):
                 return True
         return False
 
     def _check_permission(
-        self, method, rule, user, route_role_config={}, anonymous_role_name=''
+        self, method, path, user, role_route_config={}, anonymous_role_name=''
     ):
         """Return does the current user can access the resource.
         Example::
@@ -362,19 +422,19 @@ class RoleRouteBasedACL(object):
                 return Response('Blah Blah...')
 
         :param method: The method wait to check.
-        :param rule: The application rule.
+        :param path: The incoming request path.
         :param user: user who you need to check. Current user by default.
-        :param route_role_config: User provided config for route role mapping.
+        :param role_route_config: User provided config for role route mapping.
         :param anonymous_role_name: Role for anonymous users. This should be
         the same as the name of the corresponding role in db/config
         """
-        if route_role_config:
+        if role_route_config:
             return self._check_permission_against_config(
-                method, rule, user, route_role_config, anonymous_role_name
+                method, path, user, role_route_config, anonymous_role_name
             )
         else:
             return self._check_permission_against_db(
-                method, rule, user, anonymous_role_name
+                method, path, user, anonymous_role_name
             )
         return False
 

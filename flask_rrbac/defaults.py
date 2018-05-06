@@ -2,20 +2,21 @@
 Determines if the role-route mapping should be picked from the
 app environment or the DB.
 
-The keys are routes (rules) and the value if a map of request method and the
-set of roles allowed to access the rule-method combination
+The keys are roles and the value is a map of request method and the
+set of rules (routes) allowed to access the rule-method combination
 Example:
-    app.config['RRBAC_ROUTE_ROLE_MAP'] = {
-        '/route1': {
-            'GET': {'admin', 'super_admin'},
-            'POST': {'super_admin'}
+    app.config['RRBAC_ROLE_ROUTE_MAP'] = {
+        'role1': {
+            'GET': {'/route1', '/route2'},
+            'POST': {'/route2'}
         },
-        '/uncovered_route': {
-            'GET': {'admin', 'super_admin', 'Anon'}
+        'role2': {
+            'GET': {'/route1', '/route2'},
+            'POST': {'/route1', '/route2'}
         }
     }
 """
-RRBAC_ROUTE_ROLE_MAP = {}
+RRBAC_ROLE_ROUTE_MAP = {}
 
 """
 Determines if static files should be mapped to Anonymous user role or not.
