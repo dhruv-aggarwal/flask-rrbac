@@ -47,8 +47,8 @@ class ACLRoleRouteMapMixin(object):
         An entry is active when the following conditions are met:
             1. deleted_at is empty (None). This means that this entry will not
             expire
-            2. deleted_at is in the past. This means that the entry has already
-            expired
+            2. deleted_at is in the future. This means that the entry
+            has not already expired
         """
         try:
             if self.deleted_at is None:

@@ -1,4 +1,4 @@
-Flask-RBAC Changelog
+Flask-RRBAC Changelog
 ====================
 
 (in development)
