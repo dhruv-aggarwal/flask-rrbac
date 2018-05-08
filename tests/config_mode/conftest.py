@@ -118,7 +118,7 @@ def fixture_success(request):
                 'method': 'GET',
                 'url_rule': '/uncovered_route',
                 'user': base_user,
-                'function': 'uncovered_route'
+                'function': app.view_functions['uncovered_route']
             },
             'output': {
                 'status_code': 200
@@ -129,7 +129,7 @@ def fixture_success(request):
                 'method': 'HEAD',
                 'url_rule': '/uncovered_route',
                 'user': base_user,
-                'function': 'uncovered_route'
+                'function': app.view_functions['uncovered_route']
             },
             'output': {
                 'status_code': 200
@@ -140,7 +140,7 @@ def fixture_success(request):
                 'method': 'GET',
                 'url_rule': '/uncovered_route',
                 'user': admin_user,
-                'function': 'uncovered_route'
+                'function': app.view_functions['uncovered_route']
             },
             'output': {
                 'status_code': 200
@@ -151,7 +151,7 @@ def fixture_success(request):
                 'method': 'HEAD',
                 'url_rule': '/uncovered_route',
                 'user': admin_user,
-                'function': 'uncovered_route'
+                'function': app.view_functions['uncovered_route']
             },
             'output': {
                 'status_code': 200
@@ -162,7 +162,7 @@ def fixture_success(request):
                 'method': 'GET',
                 'url_rule': '/uncovered_route',
                 'user': super_admin_user,
-                'function': 'uncovered_route'
+                'function': app.view_functions['uncovered_route']
             },
             'output': {
                 'status_code': 200
@@ -173,7 +173,7 @@ def fixture_success(request):
                 'method': 'HEAD',
                 'url_rule': '/uncovered_route',
                 'user': super_admin_user,
-                'function': 'uncovered_route'
+                'function': app.view_functions['uncovered_route']
             },
             'output': {
                 'status_code': 200
@@ -184,7 +184,7 @@ def fixture_success(request):
                 'method': 'GET',
                 'url_rule': '/uncovered_route',
                 'user': None,
-                'function': 'uncovered_route'
+                'function': app.view_functions['uncovered_route']
             },
             'output': {
                 'status_code': 200
@@ -195,7 +195,7 @@ def fixture_success(request):
                 'method': 'HEAD',
                 'url_rule': '/uncovered_route',
                 'user': None,
-                'function': 'uncovered_route'
+                'function': app.view_functions['uncovered_route']
             },
             'output': {
                 'status_code': 200
@@ -206,7 +206,7 @@ def fixture_success(request):
                 'method': 'GET',
                 'url_rule': '/covered_route',
                 'user': admin_user,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 200
@@ -217,7 +217,7 @@ def fixture_success(request):
                 'method': 'HEAD',
                 'url_rule': '/covered_route',
                 'user': admin_user,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 200
@@ -228,7 +228,7 @@ def fixture_success(request):
                 'method': 'POST',
                 'url_rule': '/covered_route',
                 'user': super_admin_user,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 200
@@ -239,7 +239,7 @@ def fixture_success(request):
                 'method': 'GET',
                 'url_rule': '/covered_route',
                 'user': super_admin_user,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 200
@@ -250,7 +250,7 @@ def fixture_success(request):
                 'method': 'HEAD',
                 'url_rule': '/covered_route',
                 'user': super_admin_user,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 200
@@ -280,7 +280,7 @@ def fixture_failure(request):
                 'method': 'POST',
                 'url_rule': '/covered_route',
                 'user': admin_user,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 403
@@ -291,7 +291,7 @@ def fixture_failure(request):
                 'method': 'GET',
                 'url_rule': '/covered_route',
                 'user': base_user,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 403
@@ -302,7 +302,7 @@ def fixture_failure(request):
                 'method': 'GET',
                 'url_rule': '/covered_route',
                 'user': None,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 403
@@ -313,7 +313,7 @@ def fixture_failure(request):
                 'method': 'POST',
                 'url_rule': '/covered_route',
                 'user': None,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 403
@@ -348,7 +348,7 @@ def fixture_regex_success(request):
                 'method': 'GET',
                 'url_rule': '/covered_route',
                 'user': admin_user,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 200
@@ -359,7 +359,7 @@ def fixture_regex_success(request):
                 'method': 'POST',
                 'url_rule': '/covered_route',
                 'user': admin_user,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 200
@@ -370,7 +370,7 @@ def fixture_regex_success(request):
                 'method': 'GET',
                 'url_rule': '/covered_route/1',
                 'user': admin_user,
-                'function': 'number_covered_route'
+                'function': app.view_functions['number_covered_route']
             },
             'output': {
                 'status_code': 200
@@ -381,7 +381,7 @@ def fixture_regex_success(request):
                 'method': 'POST',
                 'url_rule': '/covered_route/1',
                 'user': admin_user,
-                'function': 'number_covered_route'
+                'function': app.view_functions['number_covered_route']
             },
             'output': {
                 'status_code': 200
@@ -392,7 +392,7 @@ def fixture_regex_success(request):
                 'method': 'GET',
                 'url_rule': '/uncovered_route',
                 'user': admin_user,
-                'function': 'uncovered_route'
+                'function': app.view_functions['uncovered_route']
             },
             'output': {
                 'status_code': 200
@@ -403,7 +403,7 @@ def fixture_regex_success(request):
                 'method': 'GET',
                 'url_rule': '/covered_route/1',
                 'user': base_user,
-                'function': 'number_covered_route'
+                'function': app.view_functions['number_covered_route']
             },
             'output': {
                 'status_code': 200
@@ -414,7 +414,7 @@ def fixture_regex_success(request):
                 'method': 'GET',
                 'url_rule': '/covered_route/2',
                 'user': base_user,
-                'function': 'number_covered_route'
+                'function': app.view_functions['number_covered_route']
             },
             'output': {
                 'status_code': 200
@@ -425,7 +425,7 @@ def fixture_regex_success(request):
                 'method': 'POST',
                 'url_rule': '/covered_route/1',
                 'user': base_user,
-                'function': 'number_covered_route'
+                'function': app.view_functions['number_covered_route']
             },
             'output': {
                 'status_code': 200
@@ -436,7 +436,7 @@ def fixture_regex_success(request):
                 'method': 'GET',
                 'url_rule': '/covered_route',
                 'user': base_user,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 200
@@ -465,7 +465,7 @@ def fixture_regex_failure(request):
                 'method': 'POST',
                 'url_rule': '/covered_route/2',
                 'user': base_user,
-                'function': 'number_covered_route'
+                'function': app.view_functions['number_covered_route']
             },
             'output': {
                 'status_code': 403
@@ -476,7 +476,7 @@ def fixture_regex_failure(request):
                 'method': 'POST',
                 'url_rule': '/covered_route',
                 'user': base_user,
-                'function': 'covered_route'
+                'function': app.view_functions['covered_route']
             },
             'output': {
                 'status_code': 403
@@ -487,7 +487,7 @@ def fixture_regex_failure(request):
                 'method': 'GET',
                 'url_rule': '/uncovered_route',
                 'user': base_user,
-                'function': 'uncovered_route'
+                'function': app.view_functions['uncovered_route']
             },
             'output': {
                 'status_code': 403

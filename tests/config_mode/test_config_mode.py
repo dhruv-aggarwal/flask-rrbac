@@ -1,5 +1,4 @@
 import pytest
-from . import uncovered_route, covered_route, number_covered_route
 from werkzeug.exceptions import Forbidden
 
 
@@ -17,7 +16,7 @@ class TestRRBAC2():
             ) as request_ctx:
                 if data['input']['user']:
                     request_ctx.user = data['input']['user']
-                output = eval(data['input']['function'])()
+                output = data['input']['function']()
                 assert output.status_code == data['output']['status_code']
                 print '\nScenario {} Passed'.format(index + 1)
 
@@ -35,7 +34,7 @@ class TestRRBAC2():
                     request_ctx.user = data['input']['user']
                 try:
                     result = 0
-                    eval(data['input']['function'])()
+                    data['input']['function']()
                 except Forbidden:
                     result = 1
                 finally:
@@ -55,7 +54,7 @@ class TestRRBAC2():
             ) as request_ctx:
                 if data['input']['user']:
                     request_ctx.user = data['input']['user']
-                output = eval(data['input']['function'])()
+                output = data['input']['function']()
                 assert output.status_code == data['output']['status_code']
                 print '\nScenario {} Passed'.format(index + 1)
 
@@ -73,7 +72,7 @@ class TestRRBAC2():
                     request_ctx.user = data['input']['user']
                 try:
                     result = 0
-                    eval(data['input']['function'])()
+                    data['input']['function']()
                 except Forbidden:
                     result = 1
                 finally:
