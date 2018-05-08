@@ -43,11 +43,47 @@ acl with::
     rrbac.init_app(app)
 
 
-How it Works
-============
+Now, once the rrbac object has been initialised with the app instance, we need
+to decorate the view functions with the following decorator::
+
+    @app.route('/some_url', methods=['GET', 'POST'])
+    @rrbac._authenticate
+    def a_view_func():
+        return Response('Blah Blah...')
+
+In order to quickly decorate all the endpoints, you can simply do the following
+after the app init::
+
+    for module, func in app.view_functions.iteritems():
+        app.view_functions[module] = rrbac._authenticate(func)
+
+
+How `_authenticate` works
+======================
+
+Decorator to perform the checks for whether the user has access to the
+specific endpoint or not.
+
+If the user has the access, then he can proceed to the view function.
+Otherwise, the auth_fail_hook is called.
+
+Input::
+
+    :param f: Decorated Function
+
+For actual implementation details, please check the following functions in
+__init__.py::
+
+    _check_permission
+    _check_permission_against_db
+    _check_permission_against_config
+
+
+Setup Requirements
+===================
 You will need to provide the following callbacks:
 
-    `~RoleRouteBasedACL.user_loader` callback.
+    `RoleRouteBasedACL.user_loader` callback.
     This callback is used to reload the user object from the user ID stored in the
     session. It should take the `unicode` ID of a user, and return the
     corresponding user object. For example::
@@ -60,7 +96,7 @@ You will need to provide the following callbacks:
     (Will be treated as an anonymous user)
 
 
-    `~RoleRouteBasedACL.set_auth_fail_hook` callback.
+    `RoleRouteBasedACL.set_auth_fail_hook` callback.
     This callback is called when the authorization fails. Defaults to abort(403).
     For example::
 
@@ -68,7 +104,7 @@ You will need to provide the following callbacks:
         def permission_denied_hook():
             abort('User is not authorized!', 403)
 
-    `~RoleRouteBasedACL.as_role_model` decorator.
+    `RoleRouteBasedACL.as_role_model` decorator.
     This decorator is used to set the model to be used for storing the roles.
     For example::
 
@@ -81,7 +117,7 @@ You will need to provide the following callbacks:
             deleted_at = db.Column(db.DateTime, default=None, nullable=True)
 
 
-    `~RoleRouteBasedACL.as_role_model` decorator.
+    `RoleRouteBasedACL.as_role_model` decorator.
     This decorator is used to set the model to be used for storing the roles.
     For example::
 
@@ -94,7 +130,7 @@ You will need to provide the following callbacks:
             deleted_at = db.Column(db.DateTime, default=None, nullable=True)
 
 
-    `~RoleRouteBasedACL.as_role_model` decorator.
+    `RoleRouteBasedACL.as_role_model` decorator.
     This decorator is used to set the model to be used for storing the roles.
     For example::
 
@@ -106,7 +142,7 @@ You will need to provide the following callbacks:
             name = db.Column(db.String(128), nullable=False)
             deleted_at = db.Column(db.DateTime, default=None, nullable=True)
 
-    `~RoleRouteBasedACL.as_route_model` decorator.
+    `RoleRouteBasedACL.as_route_model` decorator.
     This decorator is used to set the model to be used for storing the routes.
     For example::
 
@@ -119,7 +155,7 @@ You will need to provide the following callbacks:
             rule = db.Column(db.String(255), nullable=False)
             deleted_at = db.Column(db.DateTime, default=None, nullable=True)
 
-    `~RoleRouteBasedACL.as_user_model` decorator.
+    `RoleRouteBasedACL.as_user_model` decorator.
     This decorator is used to set the model to be used for storing the users.
     For example::
 
@@ -131,7 +167,7 @@ You will need to provide the following callbacks:
             name = db.Column(db.String(128), nullable=False)
             deleted_at = db.Column(db.DateTime, default=None, nullable=True)
 
-    `~RoleRouteBasedACL.as_user_role_map_model` decorator.
+    `RoleRouteBasedACL.as_user_role_map_model` decorator.
     This decorator is used to set the association class
     to be used for storing the user role mappings.
     For example::
@@ -166,7 +202,7 @@ You will need to provide the following callbacks:
                 )
             )
 
-    `~RoleRouteBasedACL.as_role_route_map_model` decorator.
+    `RoleRouteBasedACL.as_role_route_map_model` decorator.
     This decorator is used to set the association class
     to be used for storing the role route mappings.
     For example::
