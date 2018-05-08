@@ -24,21 +24,22 @@ login_manager.init_app(app)
 
 
 @app.route('/uncovered_route')
-@rrbac._authenticate
 def uncovered_route():
     return Response('uncovered_route')
 
 
 @app.route('/covered_route', methods=['GET', 'POST'])
-@rrbac._authenticate
 def covered_route():
     return Response('covered_route')
 
 
 @app.route('/covered_route/<int>', methods=['GET', 'POST'])
-@rrbac._authenticate
 def number_covered_route():
     return Response('{}'.format(request.method))
+
+
+for mod, func in app.view_functions.iteritems():
+    app.view_functions[mod] = rrbac._authenticate(func)
 
 
 def tear_down():

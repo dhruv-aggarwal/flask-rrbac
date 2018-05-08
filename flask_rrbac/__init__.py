@@ -217,6 +217,26 @@ class RoleRouteBasedACL(object):
                            'to current context')
 
     def _authenticate(self, f):
+        """
+        Decorator to perform the checks for whether the user has access to the
+        specific endpoint or not.
+
+        If the user has the access, then he can proceed to the view function.
+        Otherwise, the auth_fail_hook is called.
+
+        To add the decorator on each endpoint, instead of manually attaching
+        the signature everywhere, the following can be done:
+
+            for mod, func in app.view_functions.iteritems():
+                app.view_functions[mod] = rrbac._authenticate(func)
+
+        The above two lines decorate all the view functions with the
+        _authenticate decorator. Please note that if this approach is adopted,
+        then make sure to add the above snippet AFTER all the view functions
+        have been attached to the application.
+
+        :param f: Decorated Function
+        """
         @wraps(f)
         def decorated_function(*args, **kwargs):
             app = self.get_app()
@@ -421,7 +441,7 @@ class RoleRouteBasedACL(object):
             def a_view_func():
                 return Response('Blah Blah...')
 
-        :param method: The method wait to check.
+        :param method: Http method of the incoming request.
         :param path: The incoming request path.
         :param user: user who you need to check. Current user by default.
         :param role_route_config: User provided config for role route mapping.
