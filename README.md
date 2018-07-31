@@ -116,32 +116,6 @@ You will need to provide the following callbacks:
             name = db.Column(db.String(128), nullable=False)
             deleted_at = db.Column(db.DateTime, default=None, nullable=True)
 
-
-    `RoleRouteBasedACL.as_role_model` decorator.
-    This decorator is used to set the model to be used for storing the roles.
-    For example::
-
-        @rrbac.as_role_model
-        class Role(db.Model, ACLRoleMixin):
-            __tablename__ = 'roles'
-
-            id = db.Column(db.Integer, nullable=False, primary_key=True)
-            name = db.Column(db.String(128), nullable=False)
-            deleted_at = db.Column(db.DateTime, default=None, nullable=True)
-
-
-    `RoleRouteBasedACL.as_role_model` decorator.
-    This decorator is used to set the model to be used for storing the roles.
-    For example::
-
-        @rrbac.as_role_model
-        class Role(db.Model, ACLRoleMixin):
-            __tablename__ = 'roles'
-
-            id = db.Column(db.Integer, nullable=False, primary_key=True)
-            name = db.Column(db.String(128), nullable=False)
-            deleted_at = db.Column(db.DateTime, default=None, nullable=True)
-
     `RoleRouteBasedACL.as_route_model` decorator.
     This decorator is used to set the model to be used for storing the routes.
     For example::
