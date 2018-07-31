@@ -97,13 +97,8 @@ class RoleRouteBasedACL(object):
         Adds hook to authenticate permission before request.
         :param app: Flask object
         """
-
-        if not hasattr(app, 'extensions'):
-            app.extensions = {}
-        app.extensions['roleroutebasedacl'] = _RoleRouteBasedACLState(
-            self, app
-        )
-
+        
+        self.app = app
         self.role_route_config = app.config.get(
             'RRBAC_ROLE_ROUTE_MAP', RRBAC_ROLE_ROUTE_MAP
         )
