@@ -249,7 +249,7 @@ class RoleRouteBasedACL(object):
             current_user = self._user_loader()
 
             # Compatible with flask-login anonymous user
-            if hasattr(current_user, '_get_current_object'):
+            if current_user and hasattr(current_user, '_get_current_object'):
                 current_user = current_user._get_current_object()
 
             if current_user is not None and not isinstance(
@@ -264,7 +264,7 @@ class RoleRouteBasedACL(object):
             #     request.url_rule.rule
             # ):
             #     result = True
-            if current_user.is_authenticated():
+            if current_user and current_user.is_authenticated():
                 result = self._check_permission(
                     method,
                     request.path,
