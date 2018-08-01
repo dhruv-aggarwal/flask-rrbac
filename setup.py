@@ -9,7 +9,7 @@ with open(join(CURRENT_DIR, "README.md")) as long_description_file:
 setup(
     name="Flask-RRBAC",
     version="0.3.0",
-    url="https://github.com/dhruvaggarwal043/flask-rrbac",
+    url="https://github.com/dhruv-aggarwal/flask-rrbac",
     author="Dhruv Aggarwal",
     author_email="dhruvaggarwal043@gmail.com",
     description="Role Route Based Access Control support for Flask",
